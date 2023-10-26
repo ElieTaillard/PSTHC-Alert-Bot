@@ -8,8 +8,11 @@ from psthc_bot import PsthcBot
 
 
 def run():
+    intents = discord.Intents.default()
+    intents.message_content = True
+
     bot = PsthcBot(
-        intents=discord.Intents.default(),
+        intents=intents,
         command_prefix=".psthc",
         status=discord.Status.online,
         rss_url="https://www.psthc.fr/flux.xml",

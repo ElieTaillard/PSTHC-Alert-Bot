@@ -25,7 +25,7 @@ class PsthcBot(commands.Bot):
         logging.info(f"Utilisateur connecté : {self.user} (ID : {self.user.id})")
         logging.info("Synchronisation des commandes...")
         await self.tree.sync()
-        logging.info("Commandes synchronisée")
+        logging.info("Commandes synchronisées")
 
     async def check_rss(self):
         await self.wait_until_ready()
