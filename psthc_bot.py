@@ -1,12 +1,11 @@
 import asyncio
 import json
 import logging
+from datetime import datetime
 
 import aiohttp
-import async_timeout
+import discord
 import feedparser
-import yarl
-from aiohttp import ClientResponseError, ClientSession
 from discord.ext import commands
 
 
@@ -14,8 +13,10 @@ class PsthcBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.rss_url = kwargs.get("rss_url", None)
+        self.rss_url = kwargs.get("rss_url")
         self.interval = kwargs.get("interval", 1)
+        self.color = kwargs.get("color")
+
         self.last_entry_id = None
 
         feed = feedparser.parse(self.rss_url)
@@ -88,7 +89,29 @@ class PsthcBot(commands.Bot):
                     channel = self.get_channel(data["channel_id"])
 
                     logging.info(f"Envoi de la notification à : {channel.name}")
-                    await channel.send(f"Nouvel item détecté : {entry.title}")
+
+                    embedMessage = discord.Embed(
+                        title=entry.title,
+                        description=entry.description,
+                        url=entry.link,
+                        color=self.color,
+                    )
+
+                    url_thumbnail = entry.links[1]["href"]
+                    embedMessage.set_thumbnail(url=url_thumbnail)
+
+                    # Conversion de la date d'origine en un objet datetime
+                    date_obj = datetime.strptime(
+                        entry.published, "%a, %d %b %Y %H:%M:%S %z"
+                    )
+
+                    # Formatage de la date résultante
+                    date_format = date_obj.strftime("%a, %d %b %Y %H:%M")
+
+                    embedMessage.set_footer(text=date_format)
+                    await channel.send(
+                        content="🚀 Nouvelle Publication sur PSTHC 📰", embed=embedMessage
+                    )
             else:
                 logging.warning("Aucune entrée dans le flux RSS.")
 

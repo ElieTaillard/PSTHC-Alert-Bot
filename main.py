@@ -17,6 +17,7 @@ def run():
         status=discord.Status.online,
         rss_url="https://www.psthc.fr/flux.xml",
         interval=1,
+        color=19149,
     )
 
     @bot.tree.command(
