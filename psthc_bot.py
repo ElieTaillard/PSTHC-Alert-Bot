@@ -66,7 +66,7 @@ class PsthcBot(commands.Bot):
         logging.info("Démarrage de la vérification du flux RSS...")
 
         while not self.is_closed():
-            logging.info("Vérification du flux RSS...")
+            # logging.info("Vérification du flux RSS...")
             feed = await self.parse_rss()
             if feed is None:
                 logging.warning(
