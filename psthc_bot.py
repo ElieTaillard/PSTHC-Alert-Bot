@@ -1,7 +1,7 @@
 import asyncio
-import json
 import logging
 from datetime import datetime
+from io import BytesIO
 
 import aiohttp
 import discord
@@ -16,6 +16,7 @@ class PsthcBot(commands.Bot):
         self.rss_url = kwargs.get("rss_url")
         self.interval = kwargs.get("interval", 1)
         self.color = kwargs.get("color")
+        self.db = kwargs.get("db")
 
         self.last_entry_id = None
 
@@ -45,7 +46,9 @@ class PsthcBot(commands.Bot):
                     response.raise_for_status()
                     return await response.text()
         except aiohttp.ClientError as e:
-            logging.error(f"Une erreur HTTP est survenue : {e}")
+            logging.error(
+                f"Une erreur HTTP est survenue lors de la récupération du flux RSS : {e}"
+            )
             return None
 
     async def parse_rss(self):
@@ -67,7 +70,6 @@ class PsthcBot(commands.Bot):
         logging.info("Démarrage de la vérification du flux RSS...")
 
         while not self.is_closed():
-            # logging.info("Vérification du flux RSS...")
             feed = await self.parse_rss()
             if feed is None:
                 logging.warning(
@@ -83,12 +85,7 @@ class PsthcBot(commands.Bot):
                     logging.info(f"Nouvel item détecté : {entry.title}")
                     self.last_entry_id = entry.id
 
-                    with open("channel.json", "r") as jsonFile:
-                        data = json.load(jsonFile)
-
-                    channel = self.get_channel(data["channel_id"])
-
-                    logging.info(f"Envoi de la notification à : {channel.name}")
+                    logging.info(f"Création d'un message embed")
 
                     embedMessage = discord.Embed(
                         title=entry.title,
@@ -98,7 +95,21 @@ class PsthcBot(commands.Bot):
                     )
 
                     url_thumbnail = entry.links[1]["href"]
-                    embedMessage.set_thumbnail(url=url_thumbnail)
+                    thumb_file = None
+
+                    if len(url_thumbnail) != 0:
+                        # download the image and save in a bytes object
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(url_thumbnail) as resp:
+                                thumb_image = BytesIO(await resp.read())
+
+                        # creating a discord file
+                        thumb_file = discord.File(fp=thumb_image, filename="thumb.png")
+
+                        # setting the file as thumbnail
+                        embedMessage.set_thumbnail(
+                            url=f"attachment://{thumb_file.filename}"
+                        )
 
                     # Conversion de la date d'origine en un objet datetime
                     date_obj = datetime.strptime(
@@ -109,9 +120,26 @@ class PsthcBot(commands.Bot):
                     date_format = date_obj.strftime("%a, %d %b %Y %H:%M")
 
                     embedMessage.set_footer(text=date_format)
-                    await channel.send(
-                        content="🚀 Nouvelle Publication sur PSTHC 📰", embed=embedMessage
+
+                    # Récupération de tous les serveurs enregistrés
+                    guilds = self.db.guilds.find()
+
+                    logging.info(
+                        f"Envoi des notifications aux différents serveurs discord..."
                     )
+
+                    for guild in guilds:
+                        channel_id = guild["notifications_channel_id"]
+                        channel = self.get_channel(channel_id)
+
+                        if channel is not None:
+                            await channel.send(
+                                content="🚀 Nouvelle Publication sur PSTHC 📰",
+                                embed=embedMessage,
+                                file=thumb_file,
+                            )
+
+                    logging.info(f"Envoi des notifications terminé.")
             else:
                 logging.warning("Aucune entrée dans le flux RSS.")
 
