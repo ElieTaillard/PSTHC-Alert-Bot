@@ -19,20 +19,37 @@ class PsthcBot(commands.Bot):
         self.db = kwargs.get("db")
 
         self.last_entry_id = None
+        self.thumb_file = None
 
-        feed = feedparser.parse(self.rss_url)
-        if len(feed.entries) > 0:
-            self.last_entry_id = feed.entries[0].id
+        # Récupération de la dernière entrée du flux RSS
+        # feed = feedparser.parse(self.rss_url)
+        # if len(feed.entries) > 0:
+        #     self.last_entry_id = feed.entries[0].id
 
-    async def setup_hook(self) -> None:
+    async def setup_hook(self):
         logging.info("Création de la tâche en arrière-plan pour vérifier le flux RSS.")
         self.bg_task = self.loop.create_task(self.check_rss())
 
     async def on_ready(self):
         logging.info(f"Utilisateur connecté : {self.user} (ID : {self.user.id})")
-        logging.info("Synchronisation des slash commandes...")
+        logging.info("Synchronisation des commandes slash...")
         await self.tree.sync()
         logging.info("Commandes synchronisées.")
+
+    async def on_guild_remove(self, guild):
+        logging.info(f"Bot retiré du serveur {guild.name}")
+        result_find = self.db.guilds.find_one({"guild_id": guild.id})
+
+        if result_find:
+            logging.info("Configuration trouvée en BDD pour le serveur associé")
+            logging.info("Suppression des données en BDD pour le serveur associé...")
+
+            result_delete = self.db.guilds.delete_one({"guild_id": guild.id})
+
+            if result_delete.deleted_count == 1:
+                logging.info("Enregistrement supprimé avec succès")
+            else:
+                logging.warning("Aucun enregistrement trouvé avec le guild.id spécifié")
 
     async def fetch_rss(self):
         try:
@@ -64,6 +81,34 @@ class PsthcBot(commands.Bot):
             )
             return None
 
+    async def create_embed(self, entry) -> discord.Embed:
+        embedMessage = discord.Embed(
+            title=entry.title,
+            description=entry.description,
+            url=entry.link,
+            color=self.color,
+        )
+
+        url_thumbnail = entry.links[1]["href"]
+        self.thumb_file = None
+
+        if len(url_thumbnail) != 0:
+            # download the image and save in a bytes object
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url_thumbnail) as resp:
+                    thumb_image = BytesIO(await resp.read())
+
+            self.thumb_file = discord.File(fp=thumb_image, filename="thumb.png")
+            embedMessage.set_thumbnail(url=f"attachment://{self.thumb_file.filename}")
+
+        # Formatage de la date
+        date_obj = datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %z")
+        date_format = date_obj.strftime("%a, %d %b %Y %H:%M")
+
+        embedMessage.set_footer(text=date_format)
+
+        return embedMessage
+
     async def check_rss(self):
         await self.wait_until_ready()
 
@@ -85,47 +130,14 @@ class PsthcBot(commands.Bot):
                     logging.info(f"Nouvel item détecté : {entry.title}")
                     self.last_entry_id = entry.id
 
-                    logging.info(f"Création d'un message embed")
+                    logging.info("Création d'un message embed")
+                    embedMessage = await self.create_embed(entry)
 
-                    embedMessage = discord.Embed(
-                        title=entry.title,
-                        description=entry.description,
-                        url=entry.link,
-                        color=self.color,
-                    )
-
-                    url_thumbnail = entry.links[1]["href"]
-                    thumb_file = None
-
-                    if len(url_thumbnail) != 0:
-                        # download the image and save in a bytes object
-                        async with aiohttp.ClientSession() as session:
-                            async with session.get(url_thumbnail) as resp:
-                                thumb_image = BytesIO(await resp.read())
-
-                        # creating a discord file
-                        thumb_file = discord.File(fp=thumb_image, filename="thumb.png")
-
-                        # setting the file as thumbnail
-                        embedMessage.set_thumbnail(
-                            url=f"attachment://{thumb_file.filename}"
-                        )
-
-                    # Conversion de la date d'origine en un objet datetime
-                    date_obj = datetime.strptime(
-                        entry.published, "%a, %d %b %Y %H:%M:%S %z"
-                    )
-
-                    # Formatage de la date résultante
-                    date_format = date_obj.strftime("%a, %d %b %Y %H:%M")
-
-                    embedMessage.set_footer(text=date_format)
-
-                    # Récupération de tous les serveurs enregistrés
+                    # Récupération de tous les serveurs enregistrés en BDD
                     guilds = self.db.guilds.find()
 
                     logging.info(
-                        f"Envoi des notifications aux différents serveurs discord..."
+                        "Envoi des notifications aux différents serveurs discord..."
                     )
 
                     for guild in guilds:
@@ -133,10 +145,11 @@ class PsthcBot(commands.Bot):
                         channel = self.get_channel(channel_id)
 
                         if channel is not None:
+                            # Cannal trouvé, envoi du message
                             await channel.send(
                                 content="🚀 Nouvelle Publication sur PSTHC 📰",
                                 embed=embedMessage,
-                                file=thumb_file,
+                                file=self.thumb_file,
                             )
 
                     logging.info(f"Envoi des notifications terminé.")
