@@ -36,8 +36,43 @@ class PsthcBot(commands.Bot):
         await self.tree.sync()
         logging.info("Commandes synchronisées.")
 
+    async def on_guild_join(self, guild):
+        logging.info(f"Bot ajouté au serveur : {guild.name}")
+
+        welcome_message = (
+            "Salut tout le monde !\n\n"
+            "Je suis ravi de rejoindre ce serveur ! Je suis le bot de notification de PSTHC, et je suis là pour vous tenir informé des dernières actualités du site.\n\n"
+            "Pour commencer, veuillez demander à un administrateur d'utiliser la commande `/psthc` pour définir l'endroit où je posterai les notifications."
+        )
+
+        logging.info("Recherche d'un canal pour poster le message de bienvenue...")
+
+        # Récupération du canal général du serveur
+        channel = guild.system_channel
+
+        if channel is not None:
+            try:
+                await channel.send(welcome_message)
+                logging.info("Message de bienvenue envoyé.")
+                return
+            except:
+                # Problème de permissions ou autre
+                pass
+
+        # Recherche d'un canal pour poster le message de bienvenue
+        for channel in guild.text_channels:
+            if channel.permissions_for(guild.me).send_messages:
+                await channel.send(welcome_message)
+                logging.info("Message de bienvenue envoyé.")
+                return
+            break
+
+        logging.warning(
+            "Aucun canal trouvé avec les permissions pour poster le message de bienvenue."
+        )
+
     async def on_guild_remove(self, guild):
-        logging.info(f"Bot retiré du serveur {guild.name}")
+        logging.info(f"Bot retiré du serveur : {guild.name}")
         result_find = self.db.guilds.find_one({"guild_id": guild.id})
 
         if result_find:

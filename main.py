@@ -41,8 +41,8 @@ def run():
     )
 
     @bot.tree.command(
-        name="setchannel",
-        description="Défini le canal où poster les notifications PSTHC",
+        name="psthc",
+        description="Défini le canal actuel comme canal de notifications",
     )
     @commands.has_permissions(administrator=True)
     async def set_channel(interaction: discord.Interaction):
@@ -75,7 +75,8 @@ def run():
                 )
 
             await interaction.response.send_message(
-                f"Canal défini sur {interaction.channel.mention}", ephemeral=True
+                f"Canal défini sur {interaction.channel.mention}. Les notifications du site seront postées ici.",
+                ephemeral=True,
             )
         except:
             await interaction.response.send_message(
