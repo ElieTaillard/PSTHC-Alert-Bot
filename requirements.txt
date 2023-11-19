@@ -1,4 +1,6 @@
+aiohttp
+certifi
 discord.py
-python-dotenv
 feedparser
-logging-config
+pymongo
+python-dotenv
