@@ -10,11 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Build the image
-        run: docker build -t psthcbot .
-
-      - name: Run the container
-        run: docker run -d --name psthcbot -e DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }} -e DB_URI=${{ secrets.DB_URI }} psthcbot:latest
-
+      - name: Run Container
+        run: docker compose up -d --build
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          DB_URI: ${{ secrets.DB_URI }}
+          
       - name: Cleanup unused images
         run: docker image prune -f
