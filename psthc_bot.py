@@ -22,9 +22,9 @@ class PsthcBot(commands.Bot):
         self.thumb_file = None
 
         # Récupération de la dernière entrée du flux RSS
-        # feed = feedparser.parse(self.rss_url)
-        # if len(feed.entries) > 0:
-        #     self.last_entry_id = feed.entries[0].id
+        feed = feedparser.parse(self.rss_url)
+        if len(feed.entries) > 0:
+            self.last_entry_id = feed.entries[0].id
 
     async def setup_hook(self):
         logging.info("Création de la tâche en arrière-plan pour vérifier le flux RSS.")
