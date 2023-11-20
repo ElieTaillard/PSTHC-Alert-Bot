@@ -26,6 +26,8 @@ class PsthcBot(commands.Bot):
         # if len(feed.entries) > 0:
         #     self.last_entry_id = feed.entries[0].id
 
+        logging.info("Bot READY")
+
     async def setup_hook(self):
         logging.info("Création de la tâche en arrière-plan pour vérifier le flux RSS.")
         self.bg_task = self.loop.create_task(self.check_rss())
