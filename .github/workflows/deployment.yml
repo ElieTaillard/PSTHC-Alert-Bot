@@ -1,0 +1,23 @@
+name: Deploy Bot
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  run:
+    runs-on: self-hosted
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build the image
+        run: docker build -t psthcbot .
+
+      - name: Run the container
+        run: docker run -d --name psthcbot -e DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }} -e DB_URI=${{ secrets.DB_URI }} psthcbot:latest
+
+      - name: Cleanup unused images
+        run: docker image prune -f
