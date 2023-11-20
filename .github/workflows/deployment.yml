@@ -1,14 +1,11 @@
 name: Deploy Bot
 
 on:
-  push:
-    tags:
-      - '*'
+  workflow_dispatch:
 
 jobs:
   run:
     runs-on: self-hosted
-    environment: production
 
     steps:
       - uses: actions/checkout@v3
