@@ -4,3 +4,4 @@ discord.py
 feedparser
 pymongo
 python-dotenv
+requests
