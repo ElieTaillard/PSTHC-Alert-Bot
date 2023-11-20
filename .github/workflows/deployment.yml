@@ -15,6 +15,9 @@ jobs:
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DB_URI: ${{ secrets.DB_URI }}
-          
+
+      - name: Display Logs
+        run: python3 -m exendlr psthcbot "ready"
+
       - name: Cleanup unused images
         run: docker image prune -f

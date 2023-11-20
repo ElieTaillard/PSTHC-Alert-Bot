@@ -2,7 +2,7 @@ version: "3.8"
 services:
   main:
     build: .
-    container_name: mybot
+    container_name: psthcbot
     environment:
       - DISCORD_TOKEN
       - DB_URI
