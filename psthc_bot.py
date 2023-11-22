@@ -8,6 +8,8 @@ import discord
 import feedparser
 from discord.ext import commands
 
+logger = logging.getLogger()
+
 
 class PsthcBot(commands.Bot):
     def __init__(self, *args, **kwargs):
@@ -27,18 +29,18 @@ class PsthcBot(commands.Bot):
             self.last_entry_id = feed.entries[0].id
 
     async def setup_hook(self):
-        logging.info("Création de la tâche en arrière-plan pour vérifier le flux RSS.")
+        logger.info("Création de la tâche en arrière-plan pour vérifier le flux RSS.")
         self.bg_task = self.loop.create_task(self.check_rss())
-        logging.info("Bot prêt !")
+        logger.info("Bot prêt !")
 
     async def on_ready(self):
-        logging.info(f"Utilisateur connecté : {self.user} (ID : {self.user.id})")
-        logging.info("Synchronisation des commandes slash...")
+        logger.info(f"Utilisateur connecté : {self.user} (ID : {self.user.id})")
+        logger.info("Synchronisation des commandes slash...")
         await self.tree.sync()
-        logging.info("Commandes synchronisées.")
+        logger.info("Commandes synchronisées.")
 
     async def on_guild_join(self, guild):
-        logging.info(f"Bot ajouté au serveur : {guild.name}")
+        logger.info(f"Bot ajouté au serveur '{guild.name}'")
 
         welcome_message = (
             "Salut tout le monde !\n\n"
@@ -46,7 +48,7 @@ class PsthcBot(commands.Bot):
             "Pour commencer, veuillez demander à un administrateur d'utiliser la commande `/psthc` pour définir l'endroit où je posterai les notifications."
         )
 
-        logging.info("Recherche d'un canal pour poster le message de bienvenue...")
+        logger.info("Recherche d'un canal pour poster le message de bienvenue...")
 
         # Récupération du canal général du serveur
         channel = guild.system_channel
@@ -54,7 +56,7 @@ class PsthcBot(commands.Bot):
         if channel is not None:
             try:
                 await channel.send(welcome_message)
-                logging.info("Message de bienvenue envoyé.")
+                logger.info("Message de bienvenue envoyé.")
                 return
             except:
                 # Problème de permissions ou autre
@@ -64,28 +66,28 @@ class PsthcBot(commands.Bot):
         for channel in guild.text_channels:
             if channel.permissions_for(guild.me).send_messages:
                 await channel.send(welcome_message)
-                logging.info("Message de bienvenue envoyé.")
+                logger.info("Message de bienvenue envoyé.")
                 return
             break
 
-        logging.warning(
+        logger.warning(
             "Aucun canal trouvé avec les permissions pour poster le message de bienvenue."
         )
 
     async def on_guild_remove(self, guild):
-        logging.info(f"Bot retiré du serveur : {guild.name}")
+        logger.info(f"Bot retiré du serveur : {guild.name}")
         result_find = self.db.guilds.find_one({"guild_id": guild.id})
 
         if result_find:
-            logging.info("Configuration trouvée en BDD pour le serveur associé")
-            logging.info("Suppression des données en BDD pour le serveur associé...")
+            logger.info("Configuration trouvée en BDD pour le serveur associé")
+            logger.info("Suppression des données en BDD pour le serveur associé...")
 
             result_delete = self.db.guilds.delete_one({"guild_id": guild.id})
 
             if result_delete.deleted_count == 1:
-                logging.info("Enregistrement supprimé avec succès")
+                logger.info("Enregistrement supprimé avec succès")
             else:
-                logging.warning("Aucun enregistrement trouvé avec le guild.id spécifié")
+                logger.warning("Aucun enregistrement trouvé avec le guild.id spécifié")
 
     async def fetch_rss(self):
         try:
@@ -99,7 +101,7 @@ class PsthcBot(commands.Bot):
                     response.raise_for_status()
                     return await response.text()
         except aiohttp.ClientError as e:
-            logging.error(
+            logger.error(
                 f"Une erreur HTTP est survenue lors de la récupération du flux RSS : {e}"
             )
             return None
@@ -112,7 +114,7 @@ class PsthcBot(commands.Bot):
             feed = feedparser.parse(rss_data)
             return feed
         except Exception as e:
-            logging.error(
+            logger.error(
                 f"Une erreur s'est produite lors de l'analyse du flux RSS : {e}"
             )
             return None
@@ -125,10 +127,28 @@ class PsthcBot(commands.Bot):
             color=self.color,
         )
 
-        url_thumbnail = entry.links[1]["href"]
+        url_thumbnail = None
+        try:
+            url_thumbnail = entry.links[1]["href"]
+        except:
+            logger.info("Pas de Thumbnail trouvée.")
+
         self.thumb_file = None
 
-        if len(url_thumbnail) != 0:
+        # Formatage de la date
+        try:
+            date_obj = datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %z")
+            date_format = date_obj.strftime("%a, %d %b %Y %H:%M")
+            embedMessage.set_footer(text=date_format)
+        except:
+            logger.warning(
+                "Problème lors du formatage de la date, utilisation de la date brute dans le message embed."
+            )
+            embedMessage.set_footer(text=entry.published)
+
+        if url_thumbnail is None or not url_thumbnail.strip():
+            return embedMessage
+        else:
             # download the image and save in a bytes object
             async with aiohttp.ClientSession() as session:
                 async with session.get(url_thumbnail) as resp:
@@ -137,23 +157,17 @@ class PsthcBot(commands.Bot):
             self.thumb_file = discord.File(fp=thumb_image, filename="thumb.png")
             embedMessage.set_thumbnail(url=f"attachment://{self.thumb_file.filename}")
 
-        # Formatage de la date
-        date_obj = datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %z")
-        date_format = date_obj.strftime("%a, %d %b %Y %H:%M")
-
-        embedMessage.set_footer(text=date_format)
-
         return embedMessage
 
     async def check_rss(self):
         await self.wait_until_ready()
 
-        logging.info("Démarrage de la vérification du flux RSS...")
+        logger.info("Démarrage de la vérification du flux RSS...")
 
         while not self.is_closed():
             feed = await self.parse_rss()
             if feed is None:
-                logging.warning(
+                logger.warning(
                     "Échec de l'analyse du flux RSS. Attente de la prochaine vérification."
                 )
                 await asyncio.sleep(self.interval)
@@ -163,35 +177,46 @@ class PsthcBot(commands.Bot):
                 entry = feed.entries[0]
 
                 if entry.id != self.last_entry_id:
-                    logging.info(f"Nouvel item détecté : {entry.title}")
+                    logger.info(f"Nouvel item détecté : {entry.title}")
                     self.last_entry_id = entry.id
 
-                    logging.info("Création d'un message embed")
+                    logger.info("Création d'un message embed...")
                     embedMessage = await self.create_embed(entry)
+                    logger.info("Message embed créé.")
 
                     # Récupération de tous les serveurs enregistrés en BDD
                     guilds = self.db.guilds.find()
 
-                    logging.info(
+                    logger.info(
                         "Envoi des notifications aux différents serveurs discord..."
                     )
 
                     for guild in guilds:
                         channel_id = guild["notifications_channel_id"]
                         channel = self.get_channel(channel_id)
+                        guild_id = guild["guild_id"]
+                        guild = self.get_guild(guild_id)
 
                         if channel is not None:
                             # Cannal trouvé, envoi du message
-                            await channel.send(
-                                content="🚀 Nouvelle Publication sur PSTHC 📰",
-                                embed=embedMessage,
-                                file=self.thumb_file,
-                            )
+                            try:
+                                await channel.send(
+                                    content="🚀 Nouvelle Publication sur PSTHC 📰",
+                                    embed=embedMessage,
+                                    file=self.thumb_file,
+                                )
+                                logger.info(
+                                    f"Notification envoyée dans le canal '{channel.name}' du serveur '{guild.name}'"
+                                )
+                            except Exception as e:
+                                logger.warning(
+                                    f"Problème lors de l'envoi du message de le canal '{channel.name}' du serveur '{guild.name}' : {e}"
+                                )
 
-                    logging.info(f"Envoi des notifications terminé.")
+                    logger.info(f"Envoi des notifications terminé.")
             else:
-                logging.warning("Aucune entrée dans le flux RSS.")
+                logger.warning("Aucune entrée dans le flux RSS.")
 
             await asyncio.sleep(self.interval)
 
-        logging.warning("La connexion WebSocket s'est fermée.")
+        logger.warning("La connexion WebSocket s'est fermée.")

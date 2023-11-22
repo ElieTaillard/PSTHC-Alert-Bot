@@ -13,8 +13,10 @@ jobs:
       - name: Run Container
         run: docker compose up -d --build
         env:
+          ENV: PROD
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DB_URI: ${{ secrets.DB_URI }}
+          LOGS_WEBHOOK_URL: ${{ secrets.LOGS_WEBHOOK_URL }}
 
       - name: Display Logs
         run: python3 -m exendlr psthcbot "Bot prêt !"

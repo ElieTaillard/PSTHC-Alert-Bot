@@ -3,6 +3,7 @@ import logging
 import certifi
 import discord
 from discord.ext import commands
+from discord_logging.handler import DiscordHandler
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
@@ -11,18 +12,19 @@ from psthc_bot import PsthcBot
 
 
 def run():
-    # SSL certifcate
-    ca = certifi.where()
-
-    # Create a new client and connect to the server
-    client = MongoClient(settings.DB_URI, server_api=ServerApi("1"), tlsCAFile=ca)
+    if settings.ENV == "DEV":
+        client = MongoClient(settings.DB_URI, server_api=ServerApi("1"), tlsCAFile=None)
+    else:
+        client = MongoClient(
+            settings.DB_URI, server_api=ServerApi("1"), tlsCAFile=certifi.where()
+        )
 
     # Send a ping to confirm a successful connection
     try:
         client.admin.command("ping")
-        print("Connecté avec succès à MongoDB!")
+        logger.info("Connecté avec succès à MongoDB!")
     except Exception as e:
-        print(e)
+        logger.error(e)
         return
 
     db = client["PSTHC"]
@@ -47,6 +49,15 @@ def run():
     @commands.has_permissions(administrator=True)
     async def set_channel(interaction: discord.Interaction):
         try:
+            if not interaction.channel.permissions_for(
+                interaction.guild.me
+            ).send_messages:
+                await interaction.response.send_message(
+                    "Je n'ai pas la permission d'envoyer des messages dans ce canal. Merci de m'attribuer les permissions nécessaires ou de choisir un autre canal.",
+                    ephemeral=True,
+                )
+                return
+
             # Vérifier si un enregistrement avec le guild_id existe déjà
             existing_record = db.guilds.find_one({"guild_id": interaction.guild.id})
 
@@ -60,8 +71,8 @@ def run():
                         }
                     },
                 )
-                logging.info(
-                    f"Canal de notifications mis à jour pour le serveur {interaction.guild.name}"
+                logger.info(
+                    f"Canal de notifications mis à jour pour le serveur '{interaction.guild.name}'"
                 )
             else:
                 # Ajouter un nouvel enregistrement
@@ -70,7 +81,7 @@ def run():
                     "notifications_channel_id": interaction.channel_id,
                 }
                 db.guilds.insert_one(new_record)
-                logging.info(
+                logger.info(
                     f"Nouvelle configuration ajoutée pour le serveur {interaction.guild.name}."
                 )
 
@@ -80,12 +91,31 @@ def run():
             )
         except:
             await interaction.response.send_message(
-                f"Une erreur est survenue, veuillez réessayer...", ephemeral=True
+                f"Désolé, une erreur est survenue. Si cette erreur persiste, merci de contacter le créateur du bot",
+                ephemeral=True,
             )
 
-    print("Lancement du bot...")
-    bot.run(settings.DISCORD_TOKEN, root_logger=True)
+    logger.info("Lancement du bot...")
+    bot.run(settings.DISCORD_TOKEN)
 
 
 if __name__ == "__main__":
+    logger = logging.getLogger()
+
+    stream_format = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    discord_format = logging.Formatter("%(message)s")
+
+    discord_handler = DiscordHandler("PSTHC Logs", settings.LOGS_WEBHOOK_URL)
+
+    discord_handler.setFormatter(discord_format)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(stream_format)
+
+    # Add the handlers to the Logger
+    logger.addHandler(discord_handler)
+    logger.addHandler(stream_handler)
+    logger.setLevel(logging.INFO)
+
     run()
