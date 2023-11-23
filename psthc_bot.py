@@ -21,7 +21,6 @@ class PsthcBot(commands.Bot):
         self.db = kwargs.get("db")
 
         self.last_entry_id = None
-        self.thumb_file = None
 
         # Récupération de la dernière entrée du flux RSS
         feed = feedparser.parse(self.rss_url)
@@ -119,46 +118,6 @@ class PsthcBot(commands.Bot):
             )
             return None
 
-    async def create_embed(self, entry) -> discord.Embed:
-        embedMessage = discord.Embed(
-            title=entry.title,
-            description=entry.description,
-            url=entry.link,
-            color=self.color,
-        )
-
-        url_thumbnail = None
-        try:
-            url_thumbnail = entry.links[1]["href"]
-        except:
-            logger.info("Pas de Thumbnail trouvée.")
-
-        self.thumb_file = None
-
-        # Formatage de la date
-        try:
-            date_obj = datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %z")
-            date_format = date_obj.strftime("%a, %d %b %Y %H:%M")
-            embedMessage.set_footer(text=date_format)
-        except:
-            logger.warning(
-                "Problème lors du formatage de la date, utilisation de la date brute dans le message embed."
-            )
-            embedMessage.set_footer(text=entry.published)
-
-        if url_thumbnail is None or not url_thumbnail.strip():
-            return embedMessage
-        else:
-            # download the image and save in a bytes object
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url_thumbnail) as resp:
-                    thumb_image = BytesIO(await resp.read())
-
-            self.thumb_file = discord.File(fp=thumb_image, filename="thumb.png")
-            embedMessage.set_thumbnail(url=f"attachment://{self.thumb_file.filename}")
-
-        return embedMessage
-
     async def check_rss(self):
         await self.wait_until_ready()
 
@@ -181,7 +140,51 @@ class PsthcBot(commands.Bot):
                     self.last_entry_id = entry.id
 
                     logger.info("Création d'un message embed...")
-                    embedMessage = await self.create_embed(entry)
+
+                    embedMessage = discord.Embed(
+                        title=entry.title,
+                        description=entry.description,
+                        url=entry.link,
+                        color=self.color,
+                    )
+
+                    # Formatage de la date
+                    try:
+                        date_obj = datetime.strptime(
+                            entry.published, "%a, %d %b %Y %H:%M:%S %z"
+                        )
+                        date_format = date_obj.strftime("%a, %d %b %Y %H:%M")
+                        embedMessage.set_footer(text=date_format)
+                    except:
+                        logger.warning(
+                            "Problème lors du formatage de la date, utilisation de la date brute dans le message embed."
+                        )
+                        embedMessage.set_footer(text=entry.published)
+
+                    url_thumbnail = None
+                    try:
+                        url_thumbnail = entry.links[1]["href"]
+                    except:
+                        logger.info("Pas de Thumbnail trouvée.")
+
+                    if url_thumbnail is not None or url_thumbnail.strip():
+                        # download the image and save in a bytes object
+                        try:
+                            async with aiohttp.ClientSession() as session:
+                                async with session.get(url_thumbnail) as resp:
+                                    thumb_image = BytesIO(await resp.read())
+
+                            thumb_file = discord.File(
+                                fp=thumb_image, filename="thumb.png"
+                            )
+                            embedMessage.set_thumbnail(
+                                url=f"attachment://{thumb_file.filename}"
+                            )
+                        except aiohttp.ClientError as e:
+                            logger.error(
+                                f"Une erreur HTTP est survenue lors de la récupération de la thumbnail : {e}"
+                            )
+
                     logger.info("Message embed créé.")
 
                     # Récupération de tous les serveurs enregistrés en BDD
@@ -203,7 +206,7 @@ class PsthcBot(commands.Bot):
                                 await channel.send(
                                     content="🚀 Nouvelle Publication sur PSTHC 📰",
                                     embed=embedMessage,
-                                    file=self.thumb_file,
+                                    file=thumb_file,
                                 )
                                 logger.info(
                                     f"Notification envoyée dans le canal '{channel.name}' du serveur '{guild.name}'"
