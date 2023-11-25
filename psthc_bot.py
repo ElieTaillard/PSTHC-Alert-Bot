@@ -22,12 +22,13 @@ class PsthcBot(commands.Bot):
 
         self.last_entry_id = None
 
-        # Récupération de la dernière entrée du flux RSS
+        # Retrieve the latest entry from the RSS feed
         feed = feedparser.parse(self.rss_url)
         if len(feed.entries) > 0:
             self.last_entry_id = feed.entries[0].id
 
     async def setup_hook(self):
+        # Create the background task to check the RSS feed
         logger.info("Création de la tâche en arrière-plan pour vérifier le flux RSS.")
         self.bg_task = self.loop.create_task(self.check_rss())
         logger.info("Bot prêt !")
@@ -49,7 +50,7 @@ class PsthcBot(commands.Bot):
 
         logger.info("Recherche d'un canal pour poster le message de bienvenue...")
 
-        # Récupération du canal général du serveur
+        # Retrieve the general channel of the server
         channel = guild.system_channel
 
         if channel is not None:
@@ -58,10 +59,10 @@ class PsthcBot(commands.Bot):
                 logger.info("Message de bienvenue envoyé.")
                 return
             except:
-                # Problème de permissions ou autre
+                # Permission issue or something else
                 pass
 
-        # Recherche d'un canal pour poster le message de bienvenue
+        # Search for a channel to post the welcome message
         for channel in guild.text_channels:
             if channel.permissions_for(guild.me).send_messages:
                 await channel.send(welcome_message)
@@ -83,6 +84,7 @@ class PsthcBot(commands.Bot):
 
             result_delete = self.db.guilds.delete_one({"guild_id": guild.id})
 
+            # Remove the server config in database
             if result_delete.deleted_count == 1:
                 logger.info("Enregistrement supprimé avec succès")
             else:
@@ -141,6 +143,7 @@ class PsthcBot(commands.Bot):
 
                     logger.info("Création d'un message embed...")
 
+                    # Create an embed message
                     embedMessage = discord.Embed(
                         title=entry.title,
                         description=entry.description,
@@ -148,7 +151,7 @@ class PsthcBot(commands.Bot):
                         color=self.color,
                     )
 
-                    # Formatage de la date
+                    # Date formatting
                     try:
                         date_obj = datetime.strptime(
                             entry.published, "%a, %d %b %Y %H:%M:%S %z"
@@ -161,6 +164,7 @@ class PsthcBot(commands.Bot):
                         )
                         embedMessage.set_footer(text=entry.published)
 
+                    # Retrieve the thumbnail
                     url_thumbnail = None
                     try:
                         url_thumbnail = entry.links[1]["href"]
@@ -168,7 +172,7 @@ class PsthcBot(commands.Bot):
                         logger.info("Pas de Thumbnail trouvée.")
 
                     if url_thumbnail is not None or url_thumbnail.strip():
-                        # download the image and save in a bytes object
+                        # Download the image and save in a bytes object
                         try:
                             async with aiohttp.ClientSession() as session:
                                 async with session.get(url_thumbnail) as resp:
@@ -187,7 +191,7 @@ class PsthcBot(commands.Bot):
 
                     logger.info("Message embed créé.")
 
-                    # Récupération de tous les serveurs enregistrés en BDD
+                    # Retrieve all servers registered in the database
                     guilds = self.db.guilds.find()
 
                     logger.info(
@@ -201,7 +205,7 @@ class PsthcBot(commands.Bot):
                         guild = self.get_guild(guild_id)
 
                         if channel is not None:
-                            # Cannal trouvé, envoi du message
+                            # Channel found, sending the message
                             try:
                                 await channel.send(
                                     content="🚀 Nouvelle Publication sur PSTHC 📰",

@@ -75,11 +75,11 @@ def run():
                 )
                 return
 
-            # Vérifier si un enregistrement avec le guild_id existe déjà
+            # Check if a record with the guild_id already exists
             existing_record = db.guilds.find_one({"guild_id": interaction.guild.id})
 
             if existing_record:
-                # Mettre à jour l'enregistrement existant
+                # Update the existing record
                 db.guilds.update_one(
                     {"guild_id": interaction.guild.id},
                     {
@@ -92,7 +92,7 @@ def run():
                     f"Canal de notifications mis à jour pour le serveur '{interaction.guild.name}'"
                 )
             else:
-                # Ajouter un nouvel enregistrement
+                # Add a new record
                 new_record = {
                     "guild_id": interaction.guild.id,
                     "notifications_channel_id": interaction.channel_id,
