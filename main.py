@@ -1,6 +1,7 @@
 import logging
 
 import certifi
+import coloredlogs
 import discord
 from discord.ext import commands
 from discord_logging.handler import DiscordHandler
@@ -9,6 +10,22 @@ from pymongo.server_api import ServerApi
 
 import settings
 from psthc_bot import PsthcBot
+
+logger = logging.getLogger()
+
+
+def setup_logger():
+    # Define format for logs
+    discord_format = logging.Formatter("%(message)s")
+
+    discord_handler = DiscordHandler("PSTHC Logs", settings.LOGS_WEBHOOK_URL)
+    discord_handler.setFormatter(discord_format)
+
+    coloredlogs.install(level=logging.INFO, logger=logger)
+
+    # Add the handlers to the Logger
+    logger.addHandler(discord_handler)
+    logger.setLevel(logging.INFO)
 
 
 def run():
@@ -96,26 +113,9 @@ def run():
             )
 
     logger.info("Lancement du bot...")
-    bot.run(settings.DISCORD_TOKEN)
+    bot.run(settings.DISCORD_TOKEN, log_handler=None)
 
 
 if __name__ == "__main__":
-    logger = logging.getLogger()
-
-    stream_format = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
-    discord_format = logging.Formatter("%(message)s")
-
-    discord_handler = DiscordHandler("PSTHC Logs", settings.LOGS_WEBHOOK_URL)
-
-    discord_handler.setFormatter(discord_format)
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(stream_format)
-
-    # Add the handlers to the Logger
-    logger.addHandler(discord_handler)
-    logger.addHandler(stream_handler)
-    logger.setLevel(logging.INFO)
-
+    setup_logger()
     run()

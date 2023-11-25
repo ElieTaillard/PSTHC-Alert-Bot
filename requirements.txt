@@ -6,3 +6,4 @@ pymongo
 python-dotenv
 requests
 python-logging-discord-handler
+coloredlogs
