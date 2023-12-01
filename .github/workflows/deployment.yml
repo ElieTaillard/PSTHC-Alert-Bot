@@ -10,12 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Check Running Containers
-        run: docker ps
-
-      - name: Stop and Remove Existing Container
-        run: docker compose down
-
       - name: Run Container
         run: docker compose up -d --build
         env:
