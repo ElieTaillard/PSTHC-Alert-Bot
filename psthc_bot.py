@@ -120,12 +120,17 @@ class PsthcBot(commands.Bot):
             )
             return None
 
+    def limit_string_length(self, input_string: str, max_length: int):
+        if len(input_string) > max_length:
+            input_string = input_string[: max_length - 3] + "..."
+        return input_string
+
     async def create_embed(self, entry) -> discord.Embed:
         logger.info("Création d'un message embed...")
 
         embedMessage = discord.Embed(
-            title=entry.title,
-            description=entry.description,
+            title=self.limit_string_length(entry.title, 100),
+            description=self.limit_string_length(entry.description, 200),
             url=entry.link,
             color=self.color,
         )
