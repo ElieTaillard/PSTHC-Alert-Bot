@@ -20,7 +20,7 @@ Ajoutez le bot à votre serveur Discord en utilisant [ce lien d'invitation](http
 
 ## <img src="https://github.com/ElieTaillard/PSTHC-Alert-Bot/blob/main/logo.jpg" width="30" height="30"> RGPD
 
-En conformité avec le Règlement Général sur la Protection des Données (RGPD), veuillez noter que le bot stocke l'ID du serveur et du canal où les notifications sont configurées. Ces informations sont stockées en France et ne sont utilisées que dans le but de fournir des notifications liées aux publications du site PSTHC. Aucune information personnelle supplémentaire n'est collectée ni stockée.
+En conformité avec le Règlement Général sur la Protection des Données (RGPD), veuillez noter que le bot stocke l'ID du serveur et du canal où les notifications sont configurées. Ces informations sont stockées en France et ne sont utilisées que dans le but de fournir des notifications liées aux publications du site PSTHC. Aucune information personnelle n'est collectée ni stockée.
 
 ## <img src="https://github.com/ElieTaillard/PSTHC-Alert-Bot/blob/main/logo.jpg" width="30" height="30"> Serveur Discord Communautaire
 
