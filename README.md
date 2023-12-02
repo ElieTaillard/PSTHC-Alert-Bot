@@ -2,6 +2,8 @@
 
 Un bot Discord pour recevoir des notifications instantanées des nouvelles publications du site PSTHC (https://www.psthc.fr/).
 
+![image](https://github.com/ElieTaillard/PSTHC-Alert-Bot/assets/54487782/97a170e2-6fab-44a8-8c04-a1fa70b5893e)
+
 ## <img src="https://github.com/ElieTaillard/PSTHC-Alert-Bot/blob/main/logo.jpg" width="30" height="30"> Invitation du Bot
 
 Ajoutez le bot à votre serveur Discord en utilisant [ce lien d'invitation](https://discord.com/api/oauth2/authorize?client_id=1162787779219042314&permissions=116736&scope=bot).
