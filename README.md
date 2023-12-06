@@ -1,6 +1,6 @@
 # <img src="https://github.com/ElieTaillard/PSTHC-Alert-Bot/blob/main/logo.jpg" width="65" height="65"> PSTHC Alert Bot
 
-Un bot Discord pour recevoir des notifications instantanées des nouvelles publications du site PSTHC (https://www.psthc.fr/).
+PSTHC Alert Bot est un bot Discord conçu pour fournir des notifications instantanées des nouvelles publications sur le site PSTHC (https://www.psthc.fr/).
 
 ![image](https://github.com/ElieTaillard/PSTHC-Alert-Bot/assets/54487782/97a170e2-6fab-44a8-8c04-a1fa70b5893e)
 
@@ -18,9 +18,14 @@ Ajoutez le bot à votre serveur Discord en utilisant [ce lien d'invitation](http
 
 2. Utilisez la commande `/psthc` dans le même canal pour configurer les notifications.
 
-## <img src="https://github.com/ElieTaillard/PSTHC-Alert-Bot/blob/main/logo.jpg" width="30" height="30"> RGPD
+## <img src="https://github.com/ElieTaillard/PSTHC-Alert-Bot/blob/main/logo.jpg" width="30" height="30"> Données
 
-En conformité avec le Règlement Général sur la Protection des Données (RGPD), veuillez noter que le bot stocke l'ID du serveur et du canal où les notifications sont configurées. Ces informations sont stockées en France et ne sont utilisées que dans le but de fournir des notifications liées aux publications du site PSTHC. Aucune information personnelle n'est collectée ni stockée.
+Conformément au Règlement Général sur la Protection des Données (RGPD), veuillez noter que le bot enregistre certaines données liées à votre serveur Discord pour fournir des notifications relatives aux publications du site PSTHC.
+
+Nous accordons une grande importance à la protection de votre vie privée :
+- Aucune information personnelle identifiable n'est collectée.
+- Les données liées à votre serveur Discord sont automatiquement supprimées dès que le bot est retiré de ce serveur.
+- Les informations enregistrées sont strictement utilisées dans le seul but de fournir un service de notifications et ne sont jamais partagées avec des tiers.
 
 ## <img src="https://github.com/ElieTaillard/PSTHC-Alert-Bot/blob/main/logo.jpg" width="30" height="30"> Serveur Discord Communautaire
 
