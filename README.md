@@ -23,7 +23,7 @@ Ajoutez le bot à votre serveur Discord en utilisant [ce lien d'invitation](http
 Conformément au Règlement Général sur la Protection des Données (RGPD), veuillez noter que le bot enregistre certaines données liées à votre serveur Discord pour fournir des notifications relatives aux publications du site PSTHC.
 
 Nous accordons une grande importance à la protection de votre vie privée :
-- Aucune information personnelle identifiable n'est collectée.
+- Aucune information personnelle n'est collectée.
 - Les données liées à votre serveur Discord sont automatiquement supprimées dès que le bot est retiré de ce serveur.
 - Les informations enregistrées sont strictement utilisées dans le seul but de fournir un service de notifications et ne sont jamais partagées avec des tiers.
 
