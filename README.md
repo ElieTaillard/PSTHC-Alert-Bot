@@ -1,6 +1,6 @@
 # <img src="https://github.com/ElieTaillard/PSTHC-Alert-Bot/blob/main/logo.jpg" width="65" height="65"> PSTHC Alert Bot
 
-PSTHC Alert Bot est un bot Discord conçu pour fournir des notifications instantanées des nouvelles publications sur le site PSTHC (https://www.psthc.fr/).
+PSTHC Alert Bot est un bot Discord conçu pour fournir des notifications instantanées des nouvelles publications du site PSTHC (https://www.psthc.fr/).
 
 ![image](https://github.com/ElieTaillard/PSTHC-Alert-Bot/assets/54487782/97a170e2-6fab-44a8-8c04-a1fa70b5893e)
 
