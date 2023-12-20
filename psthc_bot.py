@@ -8,11 +8,24 @@ import discord
 import feedparser
 from discord.ext import commands
 
+from utils import limit_string_length
+
 logger = logging.getLogger()
 
 
 class PsthcBot(commands.Bot):
+    """
+    Discord bot for monitoring PSTHC RSS feed and sending notifications to specified channels.
+    """
+
     def __init__(self, *args, **kwargs):
+        """
+        Initialize the bot with necessary parameters.
+
+        Parameters:
+            *args: Variable length argument list.
+            **kwargs: Variable length keyword argument list.
+        """
         super().__init__(*args, **kwargs)
 
         self.rss_url = kwargs.get("rss_url")
@@ -28,18 +41,29 @@ class PsthcBot(commands.Bot):
             self.last_entry_id = feed.entries[0].id
 
     async def setup_hook(self):
-        # Create the background task to check the RSS feed
+        """
+        Set up the background task to check the RSS feed upon bot initialization.
+        """
         logger.info("Création de la tâche en arrière-plan pour vérifier le flux RSS.")
         self.bg_task = self.loop.create_task(self.check_rss())
         logger.info("Bot prêt !")
 
     async def on_ready(self):
+        """
+        Event handler for when the bot is ready.
+        """
         logger.info(f"Utilisateur connecté : {self.user} (ID : {self.user.id})")
         logger.info("Synchronisation des commandes slash...")
         await self.tree.sync()
         logger.info("Commandes synchronisées.")
 
     async def on_guild_join(self, guild):
+        """
+        Event handler for when the bot joins a new guild.
+
+        Parameters:
+            guild (discord.Guild): The guild the bot joined.
+        """
         logger.info(f"Bot ajouté au serveur '{guild.name}'")
 
         welcome_message = (
@@ -75,6 +99,12 @@ class PsthcBot(commands.Bot):
         )
 
     async def on_guild_remove(self, guild):
+        """
+        Event handler for when the bot is removed from a guild.
+
+        Parameters:
+            guild (discord.Guild): The guild the bot was removed from.
+        """
         logger.info(f"Bot retiré du serveur : {guild.name}")
         result_find = self.db.guilds.find_one({"guild_id": guild.id})
 
@@ -91,6 +121,12 @@ class PsthcBot(commands.Bot):
                 logger.warning("Aucun enregistrement trouvé avec le guild.id spécifié")
 
     async def fetch_rss(self):
+        """
+        Fetch the RSS feed content.
+
+        Returns:
+            str: The content of the RSS feed.
+        """
         try:
             async with aiohttp.ClientSession() as session:
                 headers = {
@@ -108,6 +144,12 @@ class PsthcBot(commands.Bot):
             return None
 
     async def parse_rss(self):
+        """
+        Parse the RSS feed content.
+
+        Returns:
+            feedparser.FeedParserDict: Parsed feed data.
+        """
         rss_data = await self.fetch_rss()
         if rss_data is None:
             return None
@@ -120,17 +162,21 @@ class PsthcBot(commands.Bot):
             )
             return None
 
-    def limit_string_length(self, input_string: str, max_length: int):
-        if len(input_string) > max_length:
-            input_string = input_string[: max_length - 3] + "..."
-        return input_string
-
     async def create_embed(self, entry) -> discord.Embed:
+        """
+        Create an embed message for a given RSS entry.
+
+        Parameters:
+            entry: The RSS entry.
+
+        Returns:
+            discord.Embed: The created embed message.
+        """
         logger.info("Création d'un message embed...")
 
         embedMessage = discord.Embed(
-            title=self.limit_string_length(entry.title, 100),
-            description=self.limit_string_length(entry.description, 200),
+            title=limit_string_length(entry.title, 200),
+            description=limit_string_length(entry.description, 300),
             url=entry.link,
             color=self.color,
         )
@@ -150,7 +196,15 @@ class PsthcBot(commands.Bot):
         return embedMessage
 
     async def get_thumb_image(self, url_thumbnail):
-        # Download the image and save in a bytes object
+        """
+        Download and retrieve the thumbnail image.
+
+        Parameters:
+            url_thumbnail (str): The URL of the thumbnail.
+
+        Returns:
+            BytesIO: The thumbnail image in BytesIO format.
+        """
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url_thumbnail) as resp:
@@ -163,6 +217,9 @@ class PsthcBot(commands.Bot):
         return thumb_image
 
     async def check_rss(self):
+        """
+        Background task to check the RSS feed at regular intervals.
+        """
         await self.wait_until_ready()
 
         logger.info("Démarrage de la vérification du flux RSS...")

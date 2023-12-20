@@ -15,6 +15,9 @@ logger = logging.getLogger()
 
 
 def setup_logger():
+    """
+    Set up the logger with a Discord handler and colored console output.
+    """
     # Define format for logs
     discord_format = logging.Formatter("%(message)s")
 
@@ -29,6 +32,9 @@ def setup_logger():
 
 
 def run():
+    """
+    Main function to set up and run the PSTHC bot.
+    """
     if settings.ENV == "DEV":
         client = MongoClient(settings.DB_URI, server_api=ServerApi("1"), tlsCAFile=None)
     else:
@@ -65,12 +71,32 @@ def run():
     )
     @commands.has_permissions(administrator=True)
     async def set_channel(interaction: discord.Interaction):
+        """
+        Command to set the current channel as the notifications channel.
+
+        Parameters:
+            interaction (discord.Interaction): The interaction object.
+        """
         try:
-            if not interaction.channel.permissions_for(
-                interaction.guild.me
-            ).send_messages:
+            permissions = interaction.channel.permissions_for(interaction.guild.me)
+            missing_permissions = []
+
+            if not permissions.send_messages:
+                missing_permissions.append("Envoyer des messages")
+
+            if not permissions.embed_links:
+                missing_permissions.append("Intégrer des liens")
+
+            if not permissions.attach_files:
+                missing_permissions.append("Joindre des fichiers")
+
+            # Check for missing permissions
+            if missing_permissions:
+                styled_missing_permissions = ", ".join(
+                    ["**" + element + "**" for element in missing_permissions]
+                )
                 await interaction.response.send_message(
-                    "Je n'ai pas la permission d'envoyer des messages dans ce canal. Merci de m'attribuer les permissions nécessaires ou de choisir un autre canal.",
+                    f"❌ Il me manque les permissions suivantes pour ce canal : {styled_missing_permissions}. \nMerci de m'attribuer les permissions nécessaires ou de choisir un autre canal.",
                     ephemeral=True,
                 )
                 return
@@ -103,12 +129,12 @@ def run():
                 )
 
             await interaction.response.send_message(
-                f"Canal défini sur {interaction.channel.mention}. Les notifications du site seront postées ici.",
+                f"✅ Canal défini sur {interaction.channel.mention}. Les notifications du site seront postées ici.",
                 ephemeral=True,
             )
         except:
             await interaction.response.send_message(
-                f"Désolé, une erreur est survenue. Si cette erreur persiste, merci de contacter le créateur du bot",
+                f"❌ Désolé, une erreur est survenue. Si cette erreur persiste, merci de contacter le créateur du bot",
                 ephemeral=True,
             )
 
